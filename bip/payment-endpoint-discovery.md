@@ -52,19 +52,19 @@ One payment through the series runs as follows:
 
 The key words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT" and "MAY" are to be interpreted as described in RFC 2119 and RFC 8174 when, and only when, they appear in all capitals.
 
-These definitions are used by all three documents of the series. The series builds on an identity service specified separately (The identity service, below), whose rules are cited as "Switch spec N" and "Switch wire N".
+These definitions are used by all three documents of the series. The series builds on an identity service specified separately (The identity service, below), whose rules are cited as "Dispatch spec N" and "Dispatch wire N".
 
-* *JSON* documents are UTF-8 without a byte order mark and hold exactly one JSON value. A member name repeated at any depth, compared after unescaping, and a lone surrogate make a document invalid. Integers are JSON numbers without sign, fraction or exponent, from 0 to 2^53 - 1; any other number outside a member defined as opaque makes the document invalid. Unknown members are ignored in records, identity documents and message bodies, and make a certificate invalid (Switch wire 1.1).
+* *JSON* documents are UTF-8 without a byte order mark and hold exactly one JSON value. A member name repeated at any depth, compared after unescaping, and a lone surrogate make a document invalid. Integers are JSON numbers without sign, fraction or exponent, from 0 to 2^53 - 1; any other number outside a member defined as opaque makes the document invalid. Unknown members are ignored in records, identity documents and message bodies, and make a certificate invalid (Dispatch wire 1.1).
 * *Exact bytes.* Signatures and hashes cover the exact bytes a writer produced. A reader never re-serializes JSON to check a signature or a hash, and anything forwarded keeps its bytes.
-* *base64url* is RFC 4648 section 5 without padding. A decoder rejects `=`, `+`, `/`, whitespace, a length of the form 4k + 1 and non-zero trailing bits, so each byte string has one text (Switch wire 1.2). `b64(n)` is the base64url text of n bytes.
-* *z-base-32* uses the alphabet `ybndrfg8ejkmcpqxot1uwisza345h769`, most significant bit first, the last group filled with zero bits, lower case, without padding. A decoder rejects a wrong length, a character outside the alphabet and non-zero trailing bits (Switch wire 1.3).
+* *base64url* is RFC 4648 section 5 without padding. A decoder rejects `=`, `+`, `/`, whitespace, a length of the form 4k + 1 and non-zero trailing bits, so each byte string has one text (Dispatch wire 1.2). `b64(n)` is the base64url text of n bytes.
+* *z-base-32* uses the alphabet `ybndrfg8ejkmcpqxot1uwisza345h769`, most significant bit first, the last group filled with zero bits, lower case, without padding. A decoder rejects a wrong length, a character outside the alphabet and non-zero trailing bits (Dispatch wire 1.3).
 * A *Pubky ID* is the z-base-32 text of a 32-byte Ed25519 public key: 52 characters. An *App ID* is the z-base-32 text of the first 16 bytes of the BLAKE3 hash of an application's Ed25519 signing public key: 26 characters.
-* `lp(x1, ..., xn)` is `BE32(len(x1)) || x1 || ... || BE32(len(xn)) || xn`. Inside `lp()`, a Pubky ID is its 32 key bytes, an App ID its 16 bytes, an integer `BE64`, and a label or other text its UTF-8 bytes (Switch wire 1.4). `BE32` and `BE64` are 4- and 8-byte big-endian unsigned integers; `||` is byte concatenation.
-* `hash(x)` is BLAKE3 with a 32-byte output. `derive(label, parts...)` is BLAKE3 in key-derivation mode with context string `label` and key material `lp(parts...)`, 32 bytes (Switch wire 1.5).
-* A *time* is `YYYY-MM-DDTHH:MM:SS[.F]Z` in UTC with a four-digit year, upper-case `T` and `Z` and an optional fraction of 1 to 9 digits. Times before 1970 and a second of 60 are invalid. Writers emit exactly three fraction digits. Times compare as instants at millisecond precision, further digits truncated (Switch wire 1.6).
-* *Ed25519* signatures (RFC 8032) are verified as follows, with A the public key, R and S the two halves of the signature, M the signature input, B the base point and L the group order. A verifier accepts only if, in this order: S < L; A and R each decode to a curve point (RFC 8032, section 5.1.3) whose encoding is again exactly the same 32 bytes; neither `[8]A` nor `[8]R` is the identity point; and the encoding of `[S]B - [k]A` equals R byte for byte, where k is SHA-512(R || A || M) reduced modulo L. The equation is not multiplied by the cofactor (Switch wire 2.1).
+* `lp(x1, ..., xn)` is `BE32(len(x1)) || x1 || ... || BE32(len(xn)) || xn`. Inside `lp()`, a Pubky ID is its 32 key bytes, an App ID its 16 bytes, an integer `BE64`, and a label or other text its UTF-8 bytes (Dispatch wire 1.4). `BE32` and `BE64` are 4- and 8-byte big-endian unsigned integers; `||` is byte concatenation.
+* `hash(x)` is BLAKE3 with a 32-byte output. `derive(label, parts...)` is BLAKE3 in key-derivation mode with context string `label` and key material `lp(parts...)`, 32 bytes (Dispatch wire 1.5).
+* A *time* is `YYYY-MM-DDTHH:MM:SS[.F]Z` in UTC with a four-digit year, upper-case `T` and `Z` and an optional fraction of 1 to 9 digits. Times before 1970 and a second of 60 are invalid. Writers emit exactly three fraction digits. Times compare as instants at millisecond precision, further digits truncated (Dispatch wire 1.6).
+* *Ed25519* signatures (RFC 8032) are verified as follows, with A the public key, R and S the two halves of the signature, M the signature input, B the base point and L the group order. A verifier accepts only if, in this order: S < L; A and R each decode to a curve point (RFC 8032, section 5.1.3) whose encoding is again exactly the same 32 bytes; neither `[8]A` nor `[8]R` is the identity point; and the encoding of `[S]B - [k]A` equals R byte for byte, where k is SHA-512(R || A || M) reduced modulo L. The equation is not multiplied by the cofactor (Dispatch wire 2.1).
 * A *signature input* is `lp(label, field1, ..., fieldn)`. Every signed object of the series names its label and fields. Signers keep the signed bytes and send exactly those bytes again; they never sign the same body twice.
-* A *signed document* travels as the JSON object `{"body": b64(body bytes), "sig": b64(signature)}`, its *carrying form*. Its *document bytes* are `lp(body bytes, signature)` and its *document hash* is `hash(document bytes)`. A reader verifies the signature first and then parses the body (Switch wire 2.2).
+* A *signed document* travels as the JSON object `{"body": b64(body bytes), "sig": b64(signature)}`, its *carrying form*. Its *document bytes* are `lp(body bytes, signature)` and its *document hash* is `hash(document bytes)`. A reader verifies the signature first and then parses the body (Dispatch wire 2.2).
 * *Invalid* data is treated as not received: it has no effect and is not shown as valid.
 
 Amounts in this series are decimal strings: ASCII digits with at most one `.` and at least one digit, at most 18 digits after the `.`, and the value times 10^18 below 2^128. `.5` and `10.` are valid; signs, exponents, grouping separators and whitespace are not. Arithmetic and comparison are exact. Amounts are in whole units of their asset. The asset of the Bitcoin identifiers of this series is `btc`, and amounts in `btc` are in bitcoin (`0.00025`, not satoshis). Other asset strings are outside this series.
@@ -90,7 +90,7 @@ An identity names one identity service in its identity document (`inbox`). The s
 
 The series relies on no notification or wake-up mechanism. How an application learns that a message is waiting is outside the series.
 
-The identity service is Paykit Dispatch, specified separately at the revisions under Reference Implementation. Its specification is published in the `pubky-switch` repository under the service's earlier name, Pubky Switch, and its rules are cited as "Switch spec N" and "Switch wire N". Where the series restates one of its rules, that specification governs any difference. The service keeps one inbox per identity for every protocol the identity's applications take part in, of which the payment protocol of this series is one (Switch spec 1). Its wire constants, the paths, document kinds and signature labels that contain `pubky-switch`, still carry the earlier name and may be renamed. A renamed wire changes this section, the citations and those constants, not the payment messages and records of the series.
+The identity service is Pubky Dispatch, specified separately in the `pubky-dispatch` repository at the revisions under Reference Implementation, where it carries its earlier name, Pubky Switch. Its rules are cited as "Dispatch spec N" and "Dispatch wire N", numbered as at those revisions. Where the series restates one of its rules, that specification governs any difference. The service keeps one inbox per identity for every protocol the identity's applications take part in, of which the payment protocol of this series is one (Dispatch spec 1). At those revisions its wire constants, the paths, document kinds and signature labels that contain `pubky-switch`, carry the earlier name, and so do the test vectors taken from them. Later Pubky Dispatch revisions, and Paykit v0.2 after the revision this series pins, spell them with `pubky-dispatch`. Moving the pin to those revisions changes this section, the citations, those constants and the vectors, not the payment messages and records of the series.
 
 ### Resolving an identity
 
@@ -116,7 +116,7 @@ A resource is addressed by an owner key and an absolute path. Paths under `/pub/
 
 * A reader reads a file with `GET /storage/<owner key text><path>` on the owner's homeserver. HTTP 404 and 410 mean the file does not exist.
 * `GET /info` returns `{"features":[...]}`, the optional features the homeserver supports. `path-addressed-storage` means it serves the `/storage/` form above; a reader that does not find it uses the earlier form `GET <path>` with the owner's key text in a `pubky-host` request header.
-* Writes require a session on the homeserver authorized by the owner. The signer grants each application write access to its own record path and never a capability that covers `/pub/pubky-switch/v1/identity.json` or a folder containing it, so that only the signer writes the identity document (Switch spec 3.4).
+* Writes require a session on the homeserver authorized by the owner. The signer grants each application write access to its own record path and never a capability that covers `/pub/pubky-switch/v1/identity.json` or a folder containing it, so that only the signer writes the identity document (Dispatch spec 3.4).
 * A reader MUST bound the size of each response before parsing it.
 
 The paths this document uses:
@@ -130,7 +130,7 @@ Both are publicly readable. The Privacy Considerations say what that exposes.
 
 ### The identity document
 
-The *identity document* is a signed document whose body is a JSON object of kind `pubky-switch.identity`, signed by the identity key under the label `pubky-switch/v1/identity` with the body as its one field (Switch spec 4.3, Switch wire 3.3). Example body:
+The *identity document* is a signed document whose body is a JSON object of kind `pubky-switch.identity`, signed by the identity key under the label `pubky-switch/v1/identity` with the body as its one field (Dispatch spec 4.3, Dispatch wire 3.3). Example body:
 
 ```json
 { "v": 1, "kind": "pubky-switch.identity",
@@ -150,12 +150,12 @@ The members a payer uses:
 
 * `v` is 1, `kind` is `pubky-switch.identity` and `identity` is the Pubky ID whose key verifies the signature.
 * `version` is at least 1 and increases with every update. `generation` is at least 1 and increases with each change of identity service provider.
-* `inbox.url` is the origin of the identity's service: exactly `https://host[:port]`, with no user info, path, query, fragment or trailing slash, at most 267 bytes, and a domain host of at most 253 bytes with labels of at most 63 (Switch wire 3.3, 7.1). `inbox.service_key` is the Ed25519 key that signs its responses.
+* `inbox.url` is the origin of the identity's service: exactly `https://host[:port]`, with no user info, path, query, fragment or trailing slash, at most 267 bytes, and a domain host of at most 253 bytes with labels of at most 63 (Dispatch wire 3.3, 7.1). `inbox.service_key` is the Ed25519 key that signs its responses.
 * `apps` lists every *current* application with the document hash of its certificate, `cert`. `removed` lists removed applications with `distrust_from`, a time. An App ID appears at most once in `apps`, at most once in `removed`, and never in both.
-* `renewed`, absent when empty, lists earlier certificates of listed applications during and after a certificate renewal: `{"app_id", "cert", "until"}`, `until` a time or `null` (Switch wire 3.3).
+* `renewed`, absent when empty, lists earlier certificates of listed applications during and after a certificate renewal: `{"app_id", "cert", "until"}`, `until` a time or `null` (Dispatch wire 3.3).
 * `record_max_age`, optional, is the longest time in seconds that a reader trusts an application record after its `updated_at`. It is at least 1; absent means 7776000 (90 days).
 
-The other members (`signer`, `policy`, `data_epoch`, `recovery_from`, `service_keys`) are defined by the identity service specification and checked for form as Switch wire 3.3 specifies; a payer reading public endpoints does not otherwise use them.
+The other members (`signer`, `policy`, `data_epoch`, `recovery_from`, `service_keys`) are defined by the identity service specification and checked for form as Dispatch wire 3.3 specifies; a payer reading public endpoints does not otherwise use them.
 
 A reader MUST verify the signature with the key of the Pubky ID it resolved and the checks above. It keeps, for each identity, the highest `version` and `generation` it has accepted and the hash of each body it has seen at each version, and:
 
@@ -163,11 +163,11 @@ A reader MUST verify the signature with the key of the Pubky ID it resolved and 
 * MUST treat two documents with the same `version` and different body bytes as *equivocation*: it stops acting on that identity, makes no payment to it and alerts its user;
 * MUST reject a document that lists in `apps` an App ID that a version it accepted lists in `removed`.
 
-A reader uses a copy of an identity document for at most 10 minutes from the start of the request that supplied it, and reads it again after any failure (Switch spec 4.3).
+A reader uses a copy of an identity document for at most 10 minutes from the start of the request that supplied it, and reads it again after any failure (Dispatch spec 4.3).
 
 ### The service's copy
 
-The identity's service serves the newest identity document it holds with a public, unauthenticated `GET /v1/<pubky id>/identity` at `inbox.url`, in a response signed with `inbox.service_key` as Switch wire 7.1 and 7.4.15 specify.
+The identity's service serves the newest identity document it holds with a public, unauthenticated `GET /v1/<pubky id>/identity` at `inbox.url`, in a response signed with `inbox.service_key` as Dispatch wire 7.1 and 7.4.15 specify.
 
 A payer about to act on an identity's public application records that holds no copy of the identity document fresher than 10 minutes:
 
@@ -176,7 +176,7 @@ A payer about to act on an identity's public application records that holds no c
 3. waits for the service's answer at most until its record reads finish plus a short grace;
 4. uses the copy with the higher `version`. The same body at an equal version confirms it; a different body at the same version is equivocation. If the service's copy lists an application the homeserver copy does not, the payer reads that application's record too.
 
-If the service answers with a signed freeze naming a next service, the payer verifies the freeze with the identity key, reads the public copy once at the next service and uses the highest copy it holds. It follows at most one freeze (Switch spec 4.3, Switch wire 3.6 and 7.4.15).
+If the service answers with a signed freeze naming a next service, the payer verifies the freeze with the identity key, reads the public copy once at the next service and uses the highest copy it holds. It follows at most one freeze (Dispatch spec 4.3, Dispatch wire 3.6 and 7.4.15).
 
 If the lookup has failed, or has not answered when the payer is about to act:
 
@@ -185,11 +185,11 @@ If the lookup has failed, or has not answered when the payer is about to act:
 
 An answer that arrives before the payment is dispatched is used.
 
-The two observations are timed together (Paykit spec 7.2). An observation's time is when the payer sent the read that gave it: the homeserver read of the identity document version used, and the service lookup, taken no later than the signed service time of its answer (Switch spec 4.3). When the lookup succeeds, each record read the payer relies on begins and ends within the interval that starts at the later of the two observation times and ends 10 minutes after the earlier one, the end excluded; this holds for the record reads started in parallel with the lookup too. Both observations must still be within their 10 minutes when the payer uses an endpoint, immediately before dispatch included; otherwise it repeats the identity lookup and reads the records again. After a user's confirmation without the service, the interval is the 10 minutes of the homeserver observation alone. A change to the identity document requires new record reads.
+The two observations are timed together (Paykit spec 7.2). An observation's time is when the payer sent the read that gave it: the homeserver read of the identity document version used, and the service lookup, taken no later than the signed service time of its answer (Dispatch spec 4.3). When the lookup succeeds, each record read the payer relies on begins and ends within the interval that starts at the later of the two observation times and ends 10 minutes after the earlier one, the end excluded; this holds for the record reads started in parallel with the lookup too. Both observations must still be within their 10 minutes when the payer uses an endpoint, immediately before dispatch included; otherwise it repeats the identity lookup and reads the records again. After a user's confirmation without the service, the interval is the 10 minutes of the homeserver observation alone. A change to the identity document requires new record reads.
 
 ### Certificates
 
-A *certificate* is a signed document whose body is a JSON object of kind `pubky-switch.app_cert`, signed by the identity key under the label `pubky-switch/v1/app-cert` (Switch spec 3.2, Switch wire 3.1):
+A *certificate* is a signed document whose body is a JSON object of kind `pubky-switch.app_cert`, signed by the identity key under the label `pubky-switch/v1/app-cert` (Dispatch spec 3.2, Dispatch wire 3.1):
 
 ```json
 { "v": 1, "kind": "pubky-switch.app_cert",
@@ -200,9 +200,9 @@ A *certificate* is a signed document whose body is a JSON object of kind `pubky-
   "issued_at": "<time>", "expires_at": "<time>" }
 ```
 
-A verifier checks, and rejects the certificate on any failure: the signature with the identity's key; `v` and `kind`; that the body has no unknown members; that `identity` is that identity; that `app_id` is the App ID of `signing_key`; that `signing_key` and `bundle_key` are 32 bytes and `bundle_key` is not an X25519 key of low order; that `scopes` holds at most 32 names, each once, each `name` or `name:<sub>` with `name` 1 to 32 characters of `a-z`, `0-9`, `_` and `-` starting with a letter or digit and `<sub>` 1 to 32 characters of `a-z`, `0-9` and `-` starting with a letter or digit, never a `name` beside one of its `name:<sub>`; that `permissions` holds only `claims.read`, `claims.write`, `lists.read`, `lists.manage` and `conversation.add`, each at most once and in that order; that `suite_keys`, if present, has the form of Switch wire 3.1; and that `expires_at` is later than `issued_at` and at most 730 days after it. A certificate has expired when the verifier's time is at or past `expires_at`.
+A verifier checks, and rejects the certificate on any failure: the signature with the identity's key; `v` and `kind`; that the body has no unknown members; that `identity` is that identity; that `app_id` is the App ID of `signing_key`; that `signing_key` and `bundle_key` are 32 bytes and `bundle_key` is not an X25519 key of low order; that `scopes` holds at most 32 names, each once, each `name` or `name:<sub>` with `name` 1 to 32 characters of `a-z`, `0-9`, `_` and `-` starting with a letter or digit and `<sub>` 1 to 32 characters of `a-z`, `0-9` and `-` starting with a letter or digit, never a `name` beside one of its `name:<sub>`; that `permissions` holds only `claims.read`, `claims.write`, `lists.read`, `lists.manage` and `conversation.add`, each at most once and in that order; that `suite_keys`, if present, has the form of Dispatch wire 3.1; and that `expires_at` is later than `issued_at` and at most 730 days after it. A certificate has expired when the verifier's time is at or past `expires_at`.
 
-The scopes of the payment protocol of this series begin with `paykit` (Switch wire 3.1, "Scope roots"). After the checks above, a payer applies the scope rules of the protocol (Paykit wire 3.1):
+The scopes of the payment protocol of this series begin with `paykit` (Dispatch wire 3.1, "Scope roots"). After the checks above, a payer applies the scope rules of the protocol (Paykit wire 3.1):
 
 * Each scope's requirements hold: `paykit_pay` requires `paykit_contacts`; `paykit_request` and each labelled selling scope `paykit_request:<label>` require `paykit_settlements` and `paykit_contacts`; `paykit_allowance_execute` requires `paykit_allowance`, `paykit_pay` and `paykit_contacts`; `paykit_manage_contacts` requires `paykit_contacts`.
 * A certificate never holds plain `paykit_request` together with a labelled `paykit_request:<label>`, holds at most 8 labelled selling scopes and at most 8 extension scopes `paykit_ext:<prefix>`, and holds no name beginning `paykit_ext:` that is not a valid extension scope. A valid `<prefix>` is `paykit-` followed by 1 to 25 characters of `a-z`, `0-9` and `-`, so `paykit_ext:paykit-cap` is valid and `paykit_ext:cap` and `paykit_ext:paykit` are not.
@@ -210,11 +210,11 @@ The scopes of the payment protocol of this series begin with `paykit` (Switch wi
 
 A certificate that fails these rules is invalid for the payment protocol even though the identity service accepts it. The second document defines what each scope authorizes. For this document, only plain `paykit_request` matters: an application publishes public endpoints only if its certificate holds it.
 
-A certificate is *current* for an identity when its document hash is the `cert` of its App ID in the identity document the reader uses, or is listed for that App ID in `renewed` with `until` `null`, and it has not expired (Switch spec 3.2, 3.4).
+A certificate is *current* for an identity when its document hash is the `cert` of its App ID in the identity document the reader uses, or is listed for that App ID in `renewed` with `until` `null`, and it has not expired (Dispatch spec 3.2, 3.4).
 
 ### Application records
 
-An *application record* is a signed document whose body is a JSON object of kind `pubky-switch.app`, signed by the application's signing key under the label `pubky-switch/v1/app-record` (Switch spec 4.2, Switch wire 3.2). Example body:
+An *application record* is a signed document whose body is a JSON object of kind `pubky-switch.app`, signed by the application's signing key under the label `pubky-switch/v1/app-record` (Dispatch spec 4.2, Dispatch wire 3.2). Example body:
 
 ```json
 { "v": 1, "kind": "pubky-switch.app",
@@ -248,9 +248,9 @@ The member `protocols.paykit` holds the payment protocol's data (Paykit wire 3.2
 
 A missing or `null` `paykit` member, `capabilities`, `endpoint_identifiers` or `public_endpoints` is empty. A reader MUST reject the record if `capabilities` or `public_endpoints` is not an object, `endpoint_identifiers` is not an array of strings, a payload is not a string or is empty, or an identifier in either is not a valid payment endpoint identifier.
 
-When a reader holds two valid records of one application, it uses the one with the later `updated_at`. Two records of one application with the same `updated_at` and different body bytes are a conflict: the reader uses neither, keeps using an earlier record of that application it already holds, if any, and tells its user; the identity's other applications are unaffected. A record whose `updated_at` is more than 5 minutes ahead of the reader's clock is not used at all (Switch spec 4.2).
+When a reader holds two valid records of one application, it uses the one with the later `updated_at`. Two records of one application with the same `updated_at` and different body bytes are a conflict: the reader uses neither, keeps using an earlier record of that application it already holds, if any, and tells its user; the identity's other applications are unaffected. A record whose `updated_at` is more than 5 minutes ahead of the reader's clock is not used at all (Dispatch spec 4.2).
 
-An application publishes its record on the homeserver only after its identity service has accepted it, and republishes the newest accepted record while the homeserver copy differs. An application that publishes no record has no public endpoints and appears publicly only as an App ID and certificate hash in the identity document (Switch spec 4.2).
+An application publishes its record on the homeserver only after its identity service has accepted it, and republishes the newest accepted record while the homeserver copy differs. An application that publishes no record has no public endpoints and appears publicly only as an App ID and certificate hash in the identity document (Dispatch spec 4.2).
 
 ### Using a record
 
@@ -366,8 +366,8 @@ The deployed protocol, Paykit v0.1, publishes an unsigned App Registry at `/pub/
 The chain of authority is: the identity key signs the PKARR packet, the identity document and each certificate; the identity document lists each current application by the hash of its certificate; the certificate names the application's signing key and scopes; the application's key signs its record and endpoints. A homeserver operator, an application holding a grant on the homeserver or a network attacker cannot forge any link. They can withhold, delay or serve older signed copies:
 
 * *Stale records.* A homeserver can serve an older record of an application, whose endpoints remain payable within its trust window. The record age limit (90 days unless the identity sets a shorter one) and a finite `expires_at` bound this. A payee that withdraws an endpoint because it is compromised revokes the application.
-* *Stale identity documents.* A homeserver can serve an older identity document that still lists a revoked application. The service's copy closes this for every payer whose lookup succeeds. After a cooperative move a stale copy names the old service, which answers with the freeze naming the next one. After a provider loss, an old service that is gone does not answer, so the payer pays only with its user's explicit confirmation and never automatically; a hostile old service can answer with its last document and no freeze, and the old document's own limits then apply (Paykit spec 11, Switch spec 4.3, 14).
-* *Withholding.* A homeserver can withhold the identity document or records, which makes the identity's public endpoints unavailable. Flooding the service's public read cannot silently disable it: the service limits it per network source, answers may be cached, and a payment the service could not confirm needs the user (Switch spec 4.3).
+* *Stale identity documents.* A homeserver can serve an older identity document that still lists a revoked application. The service's copy closes this for every payer whose lookup succeeds. After a cooperative move a stale copy names the old service, which answers with the freeze naming the next one. After a provider loss, an old service that is gone does not answer, so the payer pays only with its user's explicit confirmation and never automatically; a hostile old service can answer with its last document and no freeze, and the old document's own limits then apply (Paykit spec 11, Dispatch spec 4.3, 14).
+* *Withholding.* A homeserver can withhold the identity document or records, which makes the identity's public endpoints unavailable. Flooding the service's public read cannot silently disable it: the service limits it per network source, answers may be cached, and a payment the service could not confirm needs the user (Dispatch spec 4.3).
 
 An application whose key is stolen can sign records for itself until it is revoked and its records leave their trust window. A stolen identity key controls everything the identity signs.
 
@@ -389,7 +389,7 @@ The Ed25519 key that identifies a payee authenticates who published an endpoint.
 ## Reference Implementation
 
 * paykit-rs, branch `v0.2`, commit `aba097fa015e98f7b2926fce662d68b34ad56280`: https://github.com/pubky/paykit-rs/tree/aba097fa015e98f7b2926fce662d68b34ad56280. The library `paykit-lib` implements identifiers, the protocol member of application records and the certificate scope rules; `paykit-sdk` implements reading public endpoints. The specification files `specs/v0.2/spec.md` and `specs/v0.2/wire-format.md` at that commit are cited as "Paykit spec" and "Paykit wire". The protocol they specify is a draft and not frozen.
-* pubky-switch, the Paykit Dispatch specification under its earlier name, commit `5f3209aae28d1b538a31c8ce43506b39df828b61`: https://github.com/pubky/pubky-switch/tree/5f3209aae28d1b538a31c8ce43506b39df828b61, with `spec/spec.md` and `spec/wire-format.md` cited as "Switch spec" and "Switch wire". For the outer application record body the series follows revision `250cd60e98eecb2a0357e55257d5b0dad2d583a4`, which keeps an application's display name out of the signed record, and for reading the identity document revision `63e8a9232ba6ff8d3e4e6508e892a64073a137da`.
+* pubky-dispatch, the Pubky Dispatch specification, commit `5f3209aae28d1b538a31c8ce43506b39df828b61`, under its earlier name pubky-switch: https://github.com/pubky/pubky-dispatch/tree/5f3209aae28d1b538a31c8ce43506b39df828b61, with `spec/spec.md` and `spec/wire-format.md` cited as "Dispatch spec" and "Dispatch wire". For the outer application record body the series follows revision `250cd60e98eecb2a0357e55257d5b0dad2d583a4`, which keeps an application's display name out of the signed record, and for reading the identity document revision `63e8a9232ba6ff8d3e4e6508e892a64073a137da`.
 * pkarr 8.1.0, the record format used by the reference implementation: https://github.com/pubky/pkarr (tag `v8.1.0`).
 
 ## Test Vectors
@@ -433,7 +433,7 @@ af06a3e3291714e4f356c19c9b15cd1951ec6e6662aa77be07547f289383341d
 * [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174): requirement levels.
 * [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259) (JSON), [RFC 4648](https://www.rfc-editor.org/rfc/rfc4648) (base64url), [RFC 3339](https://www.rfc-editor.org/rfc/rfc3339) (timestamps).
 * [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032) (Ed25519), [RFC 7250](https://www.rfc-editor.org/rfc/rfc7250) (raw public keys in TLS), [RFC 9460](https://www.rfc-editor.org/rfc/rfc9460) (HTTPS records).
-* Paykit Dispatch specification and wire format, published as the Pubky Switch, commit `5f3209aae28d1b538a31c8ce43506b39df828b61`: https://github.com/pubky/pubky-switch/blob/5f3209aae28d1b538a31c8ce43506b39df828b61/spec/spec.md and https://github.com/pubky/pubky-switch/blob/5f3209aae28d1b538a31c8ce43506b39df828b61/spec/wire-format.md
+* Pubky Dispatch specification and wire format, under its earlier name Pubky Switch, commit `5f3209aae28d1b538a31c8ce43506b39df828b61`: https://github.com/pubky/pubky-dispatch/blob/5f3209aae28d1b538a31c8ce43506b39df828b61/spec/spec.md and https://github.com/pubky/pubky-dispatch/blob/5f3209aae28d1b538a31c8ce43506b39df828b61/spec/wire-format.md
 * Paykit v0.2 specification and wire format, commit `aba097fa015e98f7b2926fce662d68b34ad56280`: https://github.com/pubky/paykit-rs/blob/aba097fa015e98f7b2926fce662d68b34ad56280/specs/v0.2/spec.md and https://github.com/pubky/paykit-rs/blob/aba097fa015e98f7b2926fce662d68b34ad56280/specs/v0.2/wire-format.md
 * PKARR base specification and endpoints, version 8.1.0: https://github.com/pubky/pkarr/tree/v8.1.0/design
 * [BEP 5](https://www.bittorrent.org/beps/bep_0005.html) (Mainline DHT) and [BEP 44](https://www.bittorrent.org/beps/bep_0044.html) (mutable items).

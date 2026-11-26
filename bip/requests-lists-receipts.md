@@ -29,17 +29,17 @@ A merchant that knows its customer's key, or a person paying a contact, should n
 
 The conventions and terms of the Payment Endpoint Discovery document apply. The key words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT" and "MAY" are to be interpreted as described in RFC 2119 and RFC 8174 when, and only when, they appear in all capitals.
 
-This document specifies Paykit v0.2 at the revisions under Reference Implementation. "Paykit spec N" and "Paykit wire N" cite its specification and wire format, "Switch spec N" and "Switch wire N" those of the identity service (Payment Endpoint Discovery, "The identity service"). Rules cited and not restated are part of this specification.
+This document specifies Paykit v0.2 at the revisions under Reference Implementation. "Paykit spec N" and "Paykit wire N" cite its specification and wire format, "Dispatch spec N" and "Dispatch wire N" those of the identity service (Payment Endpoint Discovery, "The identity service"). Rules cited and not restated are part of this specification.
 
-* JSON follows Switch wire 1.1: duplicate member names make a document invalid, numbers are integers from 0 to 2^53 - 1 outside opaque members, and unknown members of message bodies are ignored. A body's `metadata` and a proof's `proof` are opaque (Paykit wire 1.1).
-* A *time* is `YYYY-MM-DDTHH:MM:SS[.F]Z` in UTC. Writers emit three fraction digits; comparisons use milliseconds (Switch wire 1.6).
+* JSON follows Dispatch wire 1.1: duplicate member names make a document invalid, numbers are integers from 0 to 2^53 - 1 outside opaque members, and unknown members of message bodies are ignored. A body's `metadata` and a proof's `proof` are opaque (Paykit wire 1.1).
+* A *time* is `YYYY-MM-DDTHH:MM:SS[.F]Z` in UTC. Writers emit three fraction digits; comparisons use milliseconds (Dispatch wire 1.6).
 * An *amount* is a decimal string `[0-9]+(\.[0-9]*)?` or `\.[0-9]+` with at most 18 fraction digits, compared exactly, in whole units of its asset (Paykit wire 1.2). This series uses the asset `btc`.
-* A *message hash* is the BLAKE3 hash of a message's exact JSON bytes, as unpadded base64url (Switch wire 1.5). The *request hash* is that of a `paykit.payment_request` and identifies the request.
-* A *payer app* holds `paykit_pay`; a *payee app* holds `paykit_request` or a labelled selling scope. *Service time* is a time signed by the identity's own switch; each app keeps the highest it has verified (Switch spec 10.1).
+* A *message hash* is the BLAKE3 hash of a message's exact JSON bytes, as unpadded base64url (Dispatch wire 1.5). The *request hash* is that of a `paykit.payment_request` and identifies the request.
+* A *payer app* holds `paykit_pay`; a *payee app* holds `paykit_request` or a labelled selling scope. *Service time* is a time signed by the identity's own Dispatch; each app keeps the highest it has verified (Dispatch spec 10.1).
 
 ### Messages through the identity service
 
-Every message here is a message of the identity service: a signed plaintext in a sealed envelope, delivered to the recipient's inbox (Switch spec 5; Switch wire 4, 5.1). The sender must be admitted by the recipient's allowlist, for example as a contact (Paykit spec 1; Switch spec 7). Paykit relies on these common fields:
+Every message here is a message of the identity service: a signed plaintext in a sealed envelope, delivered to the recipient's inbox (Dispatch spec 5; Dispatch wire 4, 5.1). The sender must be admitted by the recipient's allowlist, for example as a contact (Paykit spec 1; Dispatch spec 7). Paykit relies on these common fields:
 
 | Field | Paykit's use |
 | --- | --- |
@@ -52,15 +52,15 @@ Every message here is a message of the identity service: a signed plaintext in a
 | `refs` | message hashes in the order each kind fixes; always written, `[]` when empty |
 | `body` | per kind, below |
 
-The sending app signs the recipient identity and the exact JSON bytes. A recipient runs the ten checks of Switch wire 5.1; Paykit fixes check 8, the scopes of each kind, and check 10, each kind's body rules. A message failing a check is dropped. A kind that activity records store is at most 16384 bytes (Paykit wire 4.1).
+The sending app signs the recipient identity and the exact JSON bytes. A recipient runs the ten checks of Dispatch wire 5.1; Paykit fixes check 8, the scopes of each kind, and check 10, each kind's body rules. A message failing a check is dropped. A kind that activity records store is at most 16384 bytes (Paykit wire 4.1).
 
-There is no order between the two directions, nor within one that a recipient relies on. Each party derives state from the messages, claims and records it holds, following `refs` (Switch spec 5.3). Crossing rules are stated with each kind.
+There is no order between the two directions, nor within one that a recipient relies on. Each party derives state from the messages, claims and records it holds, following `refs` (Dispatch spec 5.3). Crossing rules are stated with each kind.
 
 ### Scopes
 
-`paykit_pay` requires `paykit_contacts`. `paykit_request` and each labelled selling scope `paykit_request:<label>` require `paykit_settlements` and `paykit_contacts`. A certificate holds plain `paykit_request` or labelled scopes, never both, and at most 8 labels. A label is 1 to 32 characters of `a-z`, `0-9` and `-`, starting with a letter or digit; payers and the switch see it, so it SHOULD be opaque (Paykit spec 3.1; Paykit wire 3.1).
+`paykit_pay` requires `paykit_contacts`. `paykit_request` and each labelled selling scope `paykit_request:<label>` require `paykit_settlements` and `paykit_contacts`. A certificate holds plain `paykit_request` or labelled scopes, never both, and at most 8 labels. A label is 1 to 32 characters of `a-z`, `0-9` and `-`, starting with a letter or digit; payers and the Dispatch see it, so it SHOULD be opaque (Paykit spec 3.1; Paykit wire 3.1).
 
-A recipient drops a message whose sender lacks the sender scope. A sender wraps a message only to apps whose certificate holds the recipient scope and whose app record's `accepts` lists the kind (Switch spec 3.4; Paykit spec 3.3; Paykit wire 4.3):
+A recipient drops a message whose sender lacks the sender scope. A sender wraps a message only to apps whose certificate holds the recipient scope and whose app record's `accepts` lists the kind (Dispatch spec 3.4; Paykit spec 3.3; Paykit wire 4.3):
 
 | Kind | Sender | Recipient | `refs`, in order |
 | --- | --- | --- | --- |
@@ -159,7 +159,7 @@ The payment method must report the asset and amount it would transfer, and a des
 
 #### Deadlines and payment time
 
-* A one-time request's attempt carries the claim `deadline` `d + 1 ms`, `d` the earlier of `proposal_expires_at` and `payment_deadline.timestamp`; with only one of them, `d` is that one, and with neither the attempt carries no `deadline`. A Billing Period's attempt carries the period start plus `seconds` plus 1 ms, or none. The service refuses an attempt from its deadline on (Paykit wire 4.5; Switch spec 10.2). A recurring request's `proposal_expires_at` bounds only acceptance.
+* A one-time request's attempt carries the claim `deadline` `d + 1 ms`, `d` the earlier of `proposal_expires_at` and `payment_deadline.timestamp`; with only one of them, `d` is that one, and with neither the attempt carries no `deadline`. A Billing Period's attempt carries the period start plus `seconds` plus 1 ms, or none. The service refuses an attempt from its deadline on (Paykit wire 4.5; Dispatch spec 10.2). A recurring request's `proposal_expires_at` bounds only acceptance.
 * The payee checks the inclusive deadline against the payment time the method's evidence gives, never the proof's arrival; a Bitcoin application documents its rule, as a block timestamp may run about 2 hours ahead (`specs/payment-conversion.md`).
 * Evidence earlier than the payee's record of its request, less a method tolerance, does not prove the request (Paykit spec 7.1).
 * Late funds are credited as received, labelled late or underpaid, but pay no occurrence and get no receipt (Paykit spec 8.2).
@@ -168,7 +168,7 @@ The payment method must report the asset and amount it would transfer, and a des
 
 **Billing Periods.** Boundary `k` is `anchor` plus `k * every` units: fixed seconds for minutes to weeks, a calendar step from the original anchor for months and years, clamped to month end. Period `k` is `[boundary(k), boundary(k+1))`. The first period contains `starts_at`; with `ends_at`, the last contains the instant before `ends_at` and is whole. A message naming another period is rejected (Paykit spec 8.2; Paykit wire 4.4).
 
-**Accepting and paying.** When `proposal_expires_at` is a time, the payer records its acceptance conditioned on `server_time_in(null, proposal_expires_at + 1 ms)` (Switch wire 6.3), so its own service decides timeliness; a `null` proposal expiry adds no condition (Paykit spec 8.2, wire 4.5). Each period then has its own obligation, attempts, proof, details and receipt. The payer's wallet decides a period is due, pays and sends a proof. A payment without the user's confirmation, under an Allowance or the app's policy, covers only periods from the one containing or following the acceptance, each until the earlier of its attempt deadline and the next period's start (Paykit spec 8.2).
+**Accepting and paying.** When `proposal_expires_at` is a time, the payer records its acceptance conditioned on `server_time_in(null, proposal_expires_at + 1 ms)` (Dispatch wire 6.3), so its own service decides timeliness; a `null` proposal expiry adds no condition (Paykit spec 8.2, wire 4.5). Each period then has its own obligation, attempts, proof, details and receipt. The payer's wallet decides a period is due, pays and sends a proof. A payment without the user's confirmation, under an Allowance or the app's policy, covers only periods from the one containing or following the acceptance, each until the earlier of its attempt deadline and the next period's start (Paykit spec 8.2).
 
 **Not before its start.** Each attempt on a period carries `server_time_in(s, null)`, `s` the period start; paying early is by hand only, after confirmation, with `s` a service time verified after it (Paykit wire 4.5).
 
@@ -237,7 +237,7 @@ A *settlement ID* names one settlement identically in every proof of it (Paykit 
 
 `paykit.payment_receipt` is the payee's signed confirmation that it credited a proof. Its body carries `attempt_id` (the proof's), `billing_period` (for a recurring request), optional `metadata`, and, only without a request, an optional `payment_reference` of 1 to 256 characters without control characters. `refs` holds the proof hash, then the request hash if any. A receipt carries no amount and does not confirm a proof with another `attempt_id` or `billing_period` (Paykit wire 4.11).
 
-A payee app stores the receipt in the same batch as the credit; sending it is optional. After verifying issuer, request, period and proof, a payer may settle the attempt's claim with `done`, basis `evidence`, citing the receipt (Paykit spec 7.3; Switch spec 10.2). Nothing from the payee shows that an attempt was not paid.
+A payee app stores the receipt in the same batch as the credit; sending it is optional. After verifying issuer, request, period and proof, a payer may settle the attempt's claim with `done`, basis `evidence`, citing the receipt (Paykit spec 7.3; Dispatch spec 10.2). Nothing from the payee shows that an attempt was not paid.
 
 #### Crediting once
 
@@ -279,7 +279,7 @@ A payer drops a list, withdrawal included, whose publisher lacks plain `paykit_r
 
 Versions compare generation first, then counter, never packed into one number or compared as text (Paykit wire 4.13).
 
-* `generation` is the publisher's verified `identity.json` generation (Switch spec 4.3). `counter` is a per-recipient counter the publishing app reserves by a conditional write to `private_list_publications` before queueing the list (Paykit spec 8.4.1; Paykit wire 5.8). Each new publication takes a strictly greater pair, also after a restore; a re-send keeps its bytes. No time enters a version.
+* `generation` is the publisher's verified `identity.json` generation (Dispatch spec 4.3). `counter` is a per-recipient counter the publishing app reserves by a conditional write to `private_list_publications` before queueing the list (Paykit spec 8.4.1; Paykit wire 5.8). Each new publication takes a strictly greater pair, also after a restore; a re-send keeps its bytes. No time enters a version.
 * For one publisher identity, app and recipient, a greater pair replaces the held list, and the same pair with the same hash is a duplicate. The same pair with another hash is an equivocation: the payer rejects it, reports the writer and keeps its list.
 * A payer pays from a list only when the payee's `identity.json`, verified freshly, has a generation at least the list's.
 
@@ -291,7 +291,7 @@ A payer uses a list only while the earlier of `expires_at` and 30 days after its
 
 * Paying a `single_use` endpoint consumes the whole list version, even if the payment fails. The payer marks it used in `payment_lists` in the batch of its claim attempt, so two own apps cannot both pay it (Paykit spec 7.2, 8.4).
 * The publisher sends a newer version when its list changes, on a proof for a single-use endpoint, in answer to a list request, and once less than half the list's lifetime remains.
-* An empty `payment_endpoints` withdraws the list. A publisher that stops sending a counterparty lists sends a withdrawal at once, also to a blocked one; it adds no conversation entry (Paykit spec 8.4.1; Switch spec 7). A withdrawal cannot recall a copy already held (Paykit spec 4).
+* An empty `payment_endpoints` withdraws the list. A publisher that stops sending a counterparty lists sends a withdrawal at once, also to a blocked one; it adds no conversation entry (Paykit spec 8.4.1; Dispatch spec 7). A withdrawal cannot recall a copy already held (Paykit spec 4).
 
 #### List requests
 
@@ -334,7 +334,7 @@ Until an adopted revision of the identity service and its Paykit mapping supply 
 
 #### Recording before paying
 
-A payment is recorded as a claim attempt at the payer's own switch before money moves, so its apps pay each obligation once (Paykit spec 7.1 to 7.3; Switch spec 10.2):
+A payment is recorded as a claim attempt at the payer's own Dispatch before money moves, so its apps pay each obligation once (Paykit spec 7.1 to 7.3; Dispatch spec 10.2):
 
 1. Derive the obligation from the payee identity, request hash and period start, blinded with the payer's naming key (Paykit wire 1.5), and write `attempt` with a fresh attempt ID, conditioned on the request record and the deadline, with any single-use reservation.
 2. Pay only after a verified answer shows the app's own attempt open, using the attempt ID as idempotency key where supported.
@@ -347,7 +347,7 @@ Another wallet finding the attempt open is told the payment is being handled. An
 
 #### Paying without a request
 
-A payer may pay a list or public endpoint without a request (Paykit spec 8.4). The obligation derives from the fresh attempt ID, and the attempt's `deadline` is 10 minutes after the latest service time seen. The proof has no `refs`, carries `amount` and, for a list, `list_version`, and reaches only apps holding plain `paykit_request`. A payment to a public endpoint may go ahead while the payer's switch does not answer and is recorded later under its original attempt ID; a list payment needs the switch.
+A payer may pay a list or public endpoint without a request (Paykit spec 8.4). The obligation derives from the fresh attempt ID, and the attempt's `deadline` is 10 minutes after the latest service time seen. The proof has no `refs`, carries `amount` and, for a list, `list_version`, and reaches only apps holding plain `paykit_request`. A payment to a public endpoint may go ahead while the payer's Dispatch does not answer and is recorded later under its original attempt ID; a list payment needs the Dispatch.
 
 ### Re-send requests
 
@@ -355,13 +355,13 @@ A payer may pay a list or public endpoint without a request (Paykit spec 8.4). T
 
 ### Shared records
 
-An identity's apps coordinate through sealed records at their own switch (Switch spec 10.3; Paykit spec 6; Paykit wire 5): `payer_activity`, `payee_activity`, `payment_lists`, `settlements` and `private_list_publications`. Their formats concern one identity's apps. The rules they produce between identities are stated above: one credit per settlement, strictly increasing list versions.
+An identity's apps coordinate through sealed records at their own Dispatch (Dispatch spec 10.3; Paykit spec 6; Paykit wire 5): `payer_activity`, `payee_activity`, `payment_lists`, `settlements` and `private_list_publications`. Their formats concern one identity's apps. The rules they produce between identities are stated above: one credit per settlement, strictly increasing list versions.
 
 ## Rationale
 
 **Requests from the payee.** The payee knows the amount, reference and timing; the payer keeps control by paying from its own wallet and accepting recurring requests explicitly. No pull authority exists; automatic payment is a separate grant in the Payment Allowances document.
 
-**Hashes and attempts.** A request is named by the hash of its signed bytes, so a reference names one set of terms. A proof names its attempt and a receipt its proof. The claim at the payer's own switch, checked against service time, is where every wallet checks before paying; a wallet with a wrong clock cannot pay early or late automatically.
+**Hashes and attempts.** A request is named by the hash of its signed bytes, so a reference names one set of terms. A proof names its attempt and a receipt its proof. The claim at the payer's own Dispatch, checked against service time, is where every wallet checks before paying; a wallet with a wrong clock cannot pay early or late automatically.
 
 **No order between directions.** Two inboxes at two services share no order, so crossing rules decide the races that matter, such as a proof against a cancellation (Paykit spec 11).
 
@@ -383,30 +383,30 @@ There is no migration (Paykit spec 16). v0.1 and v0.2 apps cannot pay each other
 
 ## Security Considerations
 
-The threat model is the identity service's (Switch spec 14) with Paykit's additions (Paykit spec 11).
+The threat model is the identity service's (Dispatch spec 14) with Paykit's additions (Paykit spec 11).
 
 * **Proofs are assertions.** A payee establishes payment from settlement it observes. A transaction ID is public and does not identify the payer; a payee needing attribution issues a request-specific address.
 * **No silent downgrade.** Since a payer never switches between private and public destinations on its own, an operator withholding a list cannot steer payment to instructions the payee did not choose. No own app can redirect a payment by writing shared state (Paykit spec 6).
 * **Stolen app keys.** A list is payable at most 30 days after acceptance and only while its app is current in an `identity.json` read within 10 minutes (Paykit spec 4).
-* **Non-repudiation.** Every message is signed over the recipient identity and its exact bytes, so a counterparty can show anyone the request, acceptance, proof or receipt it received (Switch spec 14, 15). A signed proof remains only the payer's assertion.
-* **Duplicates.** No obligation is paid twice with compliant apps and a consistent switch. Not covered: a user paying after a warning, a malicious or split-view switch, a method reporting failure and then completing, or hand credits without a mark (Paykit spec 13).
+* **Non-repudiation.** Every message is signed over the recipient identity and its exact bytes, so a counterparty can show anyone the request, acceptance, proof or receipt it received (Dispatch spec 14, 15). A signed proof remains only the payer's assertion.
+* **Duplicates.** No obligation is paid twice with compliant apps and a consistent Dispatch. Not covered: a user paying after a warning, a malicious or split-view Dispatch, a method reporting failure and then completing, or hand credits without a mark (Paykit spec 13).
 * **Compromised own apps** can hide records they may write, such as a cancellation not yet read by another own app (Paykit spec 11).
 * **Payloads** are authenticated, not validated; the payer checks each instruction (Payment Endpoint Discovery document).
 * **Withheld paths.** Positive paths on shared records that need evidence the identity service specification does not yet supply stay withheld (Paykit spec 6, 8.4.1; Paykit wire 5). The open questions of Paykit spec 17 apply, including what a payer does when its `payment_lists` record is full.
 
 ## Privacy Considerations
 
-What each party learns is in Switch spec 15 and Paykit spec 12.
+What each party learns is in Dispatch spec 15 and Paykit spec 12.
 
-* **The switch operator** cannot read messages or sealed records but sees each message's sender, time, size and target apps, the identity's contacts and deny list, and claim states and times, so with whom an identity has obligations and when.
+* **The Dispatch operator** cannot read messages or sealed records but sees each message's sender, time, size and target apps, the identity's contacts and deny list, and claim states and times, so with whom an identity has obligations and when.
 * **A counterparty** learns which of the other side's apps sent each message and a request's label.
 * **Private Payment Lists** are seen only by their recipient. Single-use payloads keep payments unlinked; reused and public endpoints link every payment to them.
-* **Public endpoints** are visible to all; reading the payee's `identity.json` before paying tells its switch that someone is about to pay.
+* **Public endpoints** are visible to all; reading the payee's `identity.json` before paying tells its Dispatch that someone is about to pay.
 * **On-chain proofs** tie the conversation to public chain data.
 
 ## Reference Implementation
 
-paykit-rs commit `aba097fa015e98f7b2926fce662d68b34ad56280` (branch `v0.2`): https://github.com/pubky/paykit-rs/tree/aba097fa015e98f7b2926fce662d68b34ad56280. `paykit-lib` implements formats, hashes, derivations and conversion amounts; `paykit-sdk` the request, list, proof and receipt flows. Paykit Dispatch, published as the Pubky Switch, commit `5f3209aae28d1b538a31c8ce43506b39df828b61`: https://github.com/pubky/pubky-switch/tree/5f3209aae28d1b538a31c8ce43506b39df828b61.
+paykit-rs commit `aba097fa015e98f7b2926fce662d68b34ad56280` (branch `v0.2`): https://github.com/pubky/paykit-rs/tree/aba097fa015e98f7b2926fce662d68b34ad56280. `paykit-lib` implements formats, hashes, derivations and conversion amounts; `paykit-sdk` the request, list, proof and receipt flows. Pubky Dispatch, under its earlier name Pubky Switch, commit `5f3209aae28d1b538a31c8ce43506b39df828b61`: https://github.com/pubky/pubky-dispatch/tree/5f3209aae28d1b538a31c8ce43506b39df828b61.
 
 ## Test Vectors
 
@@ -415,7 +415,7 @@ The auxiliary file [requests-lists-receipts/vectors.json](requests-lists-receipt
 * `keys`, `certificates`, `payee_certificates`, `payer_certificates`: the fixed keys and the certificates of senders and recipients, accepted and refused.
 * `amounts`: the decimal amount grammar, its bounds and normalized spelling.
 * `request_hashes`, `obligations`: request message hashes and the claim obligations derived from them.
-* `messages`: every kind of this document in signed form, with hash, signature, plaintext and the verdicts of checks 6, 8 and 10 of Switch wire 5.1. The recurring request, its period details, the proof of a period and a request with fixed rates are the reference implementation's messages of those names written in Bitcoin and signed again, since it gives them in another asset.
+* `messages`: every kind of this document in signed form, with hash, signature, plaintext and the verdicts of checks 6, 8 and 10 of Dispatch wire 5.1. The recurring request, its period details, the proof of a period and a request with fixed rates are the reference implementation's messages of those names written in Bitcoin and signed again, since it gives them in another asset.
 * `conversion_terms`: requests with conversion terms and period details with rates, accepted and refused at check 10 and, for period details, against their request.
 * `billing_period_forms`: messages naming a Billing Period whose `ends_at` is at or before its `starts_at`, all refused.
 * `label_rejections`, `cancellation_roles`, `multi_protocol_senders`, `payee_label_senders`, `proof_members`, `receipt_members`, `list_versions`: messages refused for their label, role, payee authority, scopes of several protocols, proof members, receipt members and list versions, with the accepted counterparts.
@@ -428,5 +428,5 @@ The runner of the Payment Endpoint Discovery document recomputes every case.
 
 * [BIP 70](https://github.com/bitcoin/bips/blob/master/bip-0070.mediawiki), [BIP 75](https://github.com/bitcoin/bips/blob/master/bip-0075.mediawiki), [BIP 321](https://github.com/bitcoin/bips/blob/master/bip-0321.mediawiki), [BOLT 11](https://github.com/lightning/bolts/blob/master/11-payment-encoding.md), [BOLT 12](https://github.com/lightning/bolts/blob/master/12-offer-encoding.md).
 * Paykit v0.2: https://github.com/pubky/paykit-rs/tree/aba097fa015e98f7b2926fce662d68b34ad56280/specs/v0.2.
-* Paykit Dispatch (published as the Pubky Switch): https://github.com/pubky/pubky-switch/tree/5f3209aae28d1b538a31c8ce43506b39df828b61/spec.
+* Pubky Dispatch (under its earlier name Pubky Switch): https://github.com/pubky/pubky-dispatch/tree/5f3209aae28d1b538a31c8ce43506b39df828b61/spec.
 * [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [RFC 8174](https://www.rfc-editor.org/rfc/rfc8174).

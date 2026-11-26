@@ -5,7 +5,7 @@
 | Source | Commit | Directory |
 | --- | --- | --- |
 | [pubky/paykit-rs](https://github.com/pubky/paykit-rs) | `aba097fa015e98f7b2926fce662d68b34ad56280` | `specs/v0.2/vectors/` |
-| [pubky/pubky-switch](https://github.com/pubky/pubky-switch) | `5f3209aae28d1b538a31c8ce43506b39df828b61` | `spec/vectors/` |
+| [pubky/pubky-dispatch](https://github.com/pubky/pubky-dispatch), formerly pubky-switch | `5f3209aae28d1b538a31c8ce43506b39df828b61` | `spec/vectors/` |
 
 The script pins the SHA-256 of every source file it reads and refuses any other content, so a checkout at another commit fails instead of producing different vectors. Each case keeps its upstream name and carries a `source` member naming the file and the JSON path it came from. Members added here, such as `refused_at_step` and `recipient_app`, are listed in each file's `notes`.
 
@@ -19,7 +19,7 @@ Python 3.9 or later. The assembler uses only the standard library. The checker, 
 
 ```
 git clone https://github.com/pubky/paykit-rs && git -C paykit-rs checkout aba097fa015e98f7b2926fce662d68b34ad56280
-git clone https://github.com/pubky/pubky-switch && git -C pubky-switch checkout 5f3209aae28d1b538a31c8ce43506b39df828b61
+git clone https://github.com/pubky/pubky-dispatch pubky-switch && git -C pubky-switch checkout 5f3209aae28d1b538a31c8ce43506b39df828b61
 python3 tools/assemble_vectors.py --paykit-rs paykit-rs --pubky-switch pubky-switch --check
 python3 bip/payment-endpoint-discovery/run_vectors.py
 ```

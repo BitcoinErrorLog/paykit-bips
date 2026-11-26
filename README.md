@@ -1,6 +1,6 @@
 # Paykit BIP draft
 
-A draft specification, in three documents, of how Bitcoin payment instructions are discovered and exchanged between identities keyed by Ed25519 public keys: signed public payment endpoints resolved through a PKARR record, a homeserver and the identity's service; Payment Requests, Private Payment Lists and receipts exchanged as signed messages; and standing Payment Allowances. It specifies Paykit v0.2 on Paykit Dispatch, the identity service formerly called the Pubky Switch (paykit-rs branch `v0.2`, commit `aba097f`; pubky-switch commit `5f3209a` with the scoped revisions the Paykit spec names), Bitcoin methods only, with no proposed changes. Paykit v0.2 is itself a draft and not frozen; the series follows it.
+A draft specification, in three documents, of how Bitcoin payment instructions are discovered and exchanged between identities keyed by Ed25519 public keys: signed public payment endpoints resolved through a PKARR record, a homeserver and the identity's service; Payment Requests, Private Payment Lists and receipts exchanged as signed messages; and standing Payment Allowances. It specifies Paykit v0.2 on Pubky Dispatch, the identity service formerly called the Pubky Switch (paykit-rs branch `v0.2`, commit `aba097f`; pubky-dispatch commit `5f3209a`, from before the rename, with the scoped revisions the Paykit spec names), Bitcoin methods only, with no proposed changes. Paykit v0.2 is itself a draft and not frozen; the series follows it.
 
 Authors: John Carvalho <bitcoinerrorlog@gmail.com>, dzdidi.
 
@@ -8,7 +8,7 @@ Authors: John Carvalho <bitcoinerrorlog@gmail.com>, dzdidi.
 
 Draft. Not yet posted to the bitcoin-dev mailing list or submitted to the BIPs repository.
 
-The first document, Payment Endpoint Discovery, is the narrow BIP: it stands alone and needs only PKARR, a homeserver, Ed25519 and BLAKE3, plus the public read of the identity's service. The second and third documents depend on that service for message transport and coordination. The service is Paykit Dispatch. Its specification and wire constants still carry the earlier name `pubky-switch`, and the rename on the wire is proposed to its maintainers, not settled. The documents keep every dependency on the service in one section, "The identity service" of the first document, and cite its specification elsewhere only as "Switch spec N" and "Switch wire N".
+The first document, Payment Endpoint Discovery, is the narrow BIP: it stands alone and needs only PKARR, a homeserver, Ed25519 and BLAKE3, plus the public read of the identity's service. The second and third documents depend on that service for message transport and coordination. The service is Pubky Dispatch. At the pinned commit its specification and wire constants carry the earlier name `pubky-switch`. Pubky Dispatch `main`, and paykit-rs `v0.2` since pubky/paykit-rs#762, spell them `pubky-dispatch`, and the series takes that spelling up when it moves its pin. The documents keep every dependency on the service in one section, "The identity service" of the first document, and cite its specification elsewhere only as "Dispatch spec N" and "Dispatch wire N".
 
 ## Reading order
 
